@@ -1,0 +1,14 @@
+2024-10-15 14:49:17,919 - INFO - 1 neue PDF(s) zur Konvertierung hinzugefügt.
+2024-10-15 14:49:30,714 - INFO - Start to convert C:/Users/Gajtner/OneDrive - WISTA.Service GmbH/Desktop/pdf_magic/converter_app/test/Lebenslauf_Leon_Gajtner.pdf
+2024-10-15 14:49:30,715 - INFO - [1;36m[1/4] Opening document...[0m
+2024-10-15 14:49:30,716 - INFO - [1;36m[2/4] Analyzing document...[0m
+2024-10-15 14:49:30,947 - INFO - [1;36m[3/4] Parsing pages...[0m
+2024-10-15 14:49:30,948 - INFO - (1/2) Page 1
+2024-10-15 14:49:30,975 - INFO - (2/2) Page 2
+2024-10-15 14:49:30,984 - INFO - [1;36m[4/4] Creating pages...[0m
+2024-10-15 14:49:31,005 - INFO - (1/2) Page 1
+2024-10-15 14:49:31,049 - INFO - (2/2) Page 2
+2024-10-15 14:49:31,077 - INFO - Terminated in 0.36s.
+2024-10-15 14:49:31,193 - INFO - Erfolgreich konvertiert: C:/Users/Gajtner/OneDrive - WISTA.Service GmbH/Desktop/pdf_magic/converter_app/test/Lebenslauf_Leon_Gajtner.pdf
+2024-10-15 14:49:31,193 - INFO - Erfolgreich konvertiert: C:/Users/Gajtner/OneDrive - WISTA.Service GmbH/Desktop/pdf_magic/converter_app/test/Lebenslauf_Leon_Gajtner.pdf
+2024-10-15 14:49:31,196 - INFO - Konvertierung abgeschlossen.

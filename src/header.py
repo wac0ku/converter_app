@@ -2,19 +2,23 @@
 # Datum: 15.10.2024
 # PDF Magic Converter
 
-# Notwendige PyQt5 Module importieren
 from PyQt5.QtCore import pyqtSignal, QThread
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtGui import QDropEvent, QDragEnterEvent
+import logging
 
-# Interfaces für PDF-Konverter und DropArea
+# Konfiguration des Loggings
+logging.basicConfig(filename='pdf_converter.log', level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
 class PDFConverterInterface(QThread):
     update_progress = pyqtSignal(int)
     update_log = pyqtSignal(str)
     
-    def __init__(self, pdf_files):
+    def __init__(self, pdf_files, output_directory):
         super().__init__()
         self.pdf_files = pdf_files
+        self.output_directory = output_directory
 
     def run(self):
         raise NotImplementedError("Methode 'run' muss in der abgeleiteten Klasse implementiert werden.")

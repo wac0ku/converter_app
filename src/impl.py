@@ -3,19 +3,21 @@
 # PDF Magic Converter
 
 from header import PDFConverterInterface, DropAreaInterface
-from PyQt5.QtWidgets import QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QTextEdit, QPushButton, QProgressBar, QFileDialog, QVBoxLayout, QLabel
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent
 from PyQt5.QtCore import Qt 
 from pdf2docx import Converter
 import docx
+import os
+import logging
 
-# Implementierung des PDF-Konverters
 class PDFConverter(PDFConverterInterface):
     def run(self):
         total_files = len(self.pdf_files)
         for index, pdf_file in enumerate(self.pdf_files, start=1):
             try:
-                docx_file = pdf_file.rsplit('.', 1)[0] + '.docx'
+                base_name = os.path.basename(pdf_file)
+                docx_file = os.path.join(self.output_directory, os.path.splitext(base_name)[0] + '.docx')
                 cv = Converter(pdf_file)
                 cv.convert(docx_file)
                 cv.close()
@@ -34,14 +36,17 @@ class PDFConverter(PDFConverterInterface):
                                 paragraph.style.font.size = docx.shared.Pt(11)
 
                 doc.save(docx_file)
-                self.update_log.emit(f"Erfolgreich konvertiert: {pdf_file}")
+                success_message = f"Erfolgreich konvertiert: {pdf_file}"
+                self.update_log.emit(success_message)
+                logging.info(success_message)
             except Exception as e:
-                self.update_log.emit(f"Fehler bei der Konvertierung von {pdf_file}: {str(e)}")
+                error_message = f"Fehler bei der Konvertierung von {pdf_file}: {str(e)}"
+                self.update_log.emit(error_message)
+                logging.error(error_message)
             
             progress = int((index / total_files) * 100)
             self.update_progress.emit(progress)
 
-# Implementierung der DropArea-Klasse
 class DropArea(DropAreaInterface):
     def __init__(self):
         super().__init__()

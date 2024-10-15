@@ -1,13 +1,17 @@
-# Author: Leon Gajtner
+# Author: Leon Gajtner (optimiert)
 # Datum: 15.10.2024
 # PDF Magic Converter
 
 from impl import PDFConverter, DropArea
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QProgressBar, QTextEdit, QFileDialog, QLabel
-from PyQt5.QtGui import QColor
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, 
+                             QWidget, QPushButton, QProgressBar, QTextEdit, 
+                             QFileDialog, QLabel, QMessageBox)
+from PyQt5.QtGui import QColor, QPalette, QFont
+from PyQt5.QtCore import Qt, QSettings
 import sys
+import os
 import logging
+import subprocess
 
 class ModernButton(QPushButton):
     def __init__(self, text, color):
@@ -30,6 +34,10 @@ class ModernButton(QPushButton):
             QPushButton:pressed {{
                 background-color: {QColor(color).darker(120).name()};
             }}
+            QPushButton:disabled {{
+                background-color: #CCCCCC;
+                color: #666666;
+            }}
         """)
 
 class MainWindow(QMainWindow):
@@ -38,7 +46,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("PDF zu DOCX Konverter")
         self.setGeometry(100, 100, 800, 600)
 
-        # Moderne Farbpalette
         self.colors = {
             'background': '#F0F4F8',
             'primary': '#4A90E2',
@@ -60,7 +67,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
-        # Titel
         title_label = QLabel("PDF zu DOCX Konverter")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet(f"""
@@ -90,6 +96,10 @@ class MainWindow(QMainWindow):
         self.select_button = ModernButton("PDFs auswählen", self.colors['primary'])
         self.select_button.clicked.connect(self.select_files)
         button_layout.addWidget(self.select_button)
+
+        self.set_output_dir_button = ModernButton("Speicherort festlegen", self.colors['accent'])
+        self.set_output_dir_button.clicked.connect(self.set_output_directory)
+        button_layout.addWidget(self.set_output_dir_button)
 
         self.convert_button = ModernButton("Konvertieren", self.colors['secondary'])
         self.convert_button.clicked.connect(self.start_conversion)
@@ -123,9 +133,20 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.log_text)
 
         self.pdf_files = []
+        self.output_directory = ""
+        self.converted_files = []
+
+        self.settings = QSettings("PDFMagicConverter", "Settings")
+        self.load_settings()
 
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger(__name__)
+
+    def load_settings(self):
+        self.output_directory = self.settings.value("output_directory", "", type=str)
+
+    def save_settings(self):
+        self.settings.setValue("output_directory", self.output_directory)
 
     def select_files(self):
         files, _ = QFileDialog.getOpenFileNames(self, "PDFs auswählen", "", "PDF Dateien (*.pdf)")
@@ -145,12 +166,24 @@ class MainWindow(QMainWindow):
             self.drop_area.label.setText("<span style='font-size: 18px;'>PDF-Dateien hier hineinziehen</span>")
         self.drop_area.label.setStyleSheet(f"color: {self.colors['primary']};")
 
+    def set_output_directory(self):
+        directory = QFileDialog.getExistingDirectory(self, "Speicherort auswählen", self.output_directory)
+        if directory:
+            self.output_directory = directory
+            self.save_settings()
+            self.log_text.append(f"<span style='color: {self.colors['accent']};'>Speicherort festgelegt: {directory}</span>")
+
     def start_conversion(self):
         if not self.pdf_files:
-            self.log_text.append(f"<span style='color: {self.colors['accent']};'>Keine PDF-Dateien ausgewählt.</span>")
+            QMessageBox.warning(self, "Keine Dateien", "Bitte wählen Sie mindestens eine PDF-Datei aus.")
             return
 
-        self.converter = PDFConverter(self.pdf_files)
+        if not self.output_directory:
+            QMessageBox.warning(self, "Kein Speicherort", "Bitte legen Sie zuerst den Speicherort fest.")
+            return
+
+        self.converted_files = []  # Reset the list of converted files
+        self.converter = PDFConverter(self.pdf_files, self.output_directory)
         self.converter.update_progress.connect(self.update_progress)
         self.converter.update_log.connect(self.update_log)
         self.converter.finished.connect(self.conversion_finished)
@@ -158,6 +191,7 @@ class MainWindow(QMainWindow):
 
         self.convert_button.setEnabled(False)
         self.select_button.setEnabled(False)
+        self.set_output_dir_button.setEnabled(False)
 
     def update_progress(self, value):
         self.progress_bar.setValue(value)
@@ -165,14 +199,46 @@ class MainWindow(QMainWindow):
     def update_log(self, message):
         self.log_text.append(f"<span style='color: {self.colors['text']};'>{message}</span>")
         self.logger.info(message)
+        if message.startswith("Erfolgreich konvertiert:"):
+            pdf_file = message.split(": ")[1]
+            docx_file = os.path.join(self.output_directory, os.path.splitext(os.path.basename(pdf_file))[0] + '.docx')
+            self.converted_files.append(docx_file)
 
     def conversion_finished(self):
         self.convert_button.setEnabled(True)
         self.select_button.setEnabled(True)
+        self.set_output_dir_button.setEnabled(True)
         self.pdf_files = []
         self.update_drop_area_label()
         self.log_text.append(f"<span style='color: {self.colors['secondary']};'>Konvertierung abgeschlossen.</span>")
         self.logger.info("Konvertierung abgeschlossen.")
+
+        self.ask_to_open_files()
+
+    def ask_to_open_files(self):
+        if self.converted_files:
+            reply = QMessageBox.question(self, 'Konvertierung abgeschlossen', 
+                                         "Möchten Sie die konvertierten Dateien öffnen?",
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            
+            if reply == QMessageBox.Yes:
+                self.open_converted_files()
+            else:
+                QMessageBox.information(self, "Konvertierung abgeschlossen", 
+                                        f"Alle Dateien wurden erfolgreich konvertiert und im Verzeichnis '{self.output_directory}' gespeichert.")
+
+    def open_converted_files(self):
+        for file in self.converted_files:
+            try:
+                if sys.platform.startswith('darwin'):  # macOS
+                    subprocess.call(('open', file))
+                elif os.name == 'nt':  # Windows
+                    os.startfile(file)
+                elif os.name == 'posix':  # Linux
+                    subprocess.call(('xdg-open', file))
+            except Exception as e:
+                self.logger.error(f"Fehler beim Öffnen der Datei {file}: {str(e)}")
+                QMessageBox.warning(self, "Fehler", f"Konnte die Datei {file} nicht öffnen: {str(e)}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
