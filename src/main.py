@@ -4,7 +4,7 @@
 
 from impl import PDFConverter, DropArea
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QProgressBar, QTextEdit, QFileDialog, QLabel
-from PyQt5.QtGui import QColor, QPalette, QFont
+from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 import sys
 import logging

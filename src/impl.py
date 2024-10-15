@@ -3,7 +3,7 @@
 # PDF Magic Converter
 
 from header import PDFConverterInterface, DropAreaInterface
-from PyQt5.QtWidgets import QTextEdit, QPushButton, QProgressBar, QFileDialog, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QVBoxLayout, QLabel
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent
 from PyQt5.QtCore import Qt 
 from pdf2docx import Converter
